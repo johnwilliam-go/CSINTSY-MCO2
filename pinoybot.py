@@ -14,6 +14,7 @@ from typing import List
 
 # Main tagging function
 def tag_language(tokens: List[str]) -> List[str]:
+
     """
     Tags each token in the input list with its predicted language.
     Args:
@@ -45,6 +46,7 @@ def tag_language(tokens: List[str]) -> List[str]:
 
 if __name__ == "__main__":
     # Example usage
-    example_tokens = ["Love", "kita", "."]
+    example_tokens = ["May", "tao", "dito"]
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)
+    print(tags)
