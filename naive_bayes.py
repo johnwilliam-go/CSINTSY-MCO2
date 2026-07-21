@@ -116,17 +116,17 @@ class NaivePrediction:
         self.rdata_ordinal_encoder = OrdinalEncoder()
         self.model_categoricalnb = CategoricalNB()
 
-        # -- Encoded target labels for model training --
-        target_labels = ['ENG', 'FIL', 'CS', 'OTH']
-        fitted_tlabels = self.rdata_label_encoder.fit(target_labels)
-
     def CategoricalToInteger(self, dataframe):
         encoded_dataframe = self.rdata_ordinal_encoder.fit(dataframe)
 
         return encoded_dataframe
 
+    def EncodedTargetLabels(self):
+        target_labels = ['ENG', 'FIL', 'CS', 'OTH']
+        return self.rdata_label_encoder.fit(target_labels)
+
     def TrainModel(self, encoded_dataframe):
-        fitted_data = self.model_categoricalnb.fit(encoded_dataframe, self.fitted_tlabels)
+        fitted_data = self.model_categoricalnb.fit(encoded_dataframe, self.EncodedTargetLabels(self))
 
         return fitted_data
 
