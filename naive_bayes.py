@@ -1,7 +1,6 @@
 import os
 from sklearn.naive_bayes import CategoricalNB
 from sklearn.preprocessing import OrdinalEncoder, LabelEncoder
-from sklearn.feature_extraction.text import CountVectorizer
 from openpyxl import load_workbook
 import pandas as pd
 import numpy as np
@@ -46,6 +45,12 @@ class FeatureMatrix:
 
         fil_suffixes = ('an', 'in', 'han', 'hin', 'ng')
 
+        fil_prepositions = ('nasa', 'sa')
+
+        eng_prepositions = ('from', 'among', 'towards', 'across',
+                            'through', 'between', 'of', 'with', 'by',
+                            'about', 'for')
+
         eng_prefix = ('anti', 'de', 'dis', 'en', 'em',
                       'fore', 'inter', 'mid', 'mis', 'non',
                       'over', 'pre', 're', 'semi', 'sub', 'super',
@@ -65,6 +70,10 @@ class FeatureMatrix:
 
         has_fil_suffix = 1 if clean_word.endswith(fil_suffixes) else 0
 
+        has_fil_prepositions = 1 if clean_word in fil_prepositions else 0
+
+        has_eng_prepositions = 1 if clean_word in eng_prepositions else 0
+
         has_eng_prefix = 1 if clean_word.startswith(eng_prefix) else 0
 
         has_eng_suffix = 1 if clean_word.startswith(eng_suffixes) else 0
@@ -77,8 +86,10 @@ class FeatureMatrix:
 
         return {'Fil Prefix': has_fil_prefix,
                 'Fil Suffix': has_fil_suffix,
+                'Fil Prepositions': has_fil_prepositions,
                 'Eng Prefix': has_eng_prefix,
                 'Eng Suffix': has_eng_suffix,
+                'Eng Prepositions': has_eng_prepositions,
                 'Ng or Nang': has_ng_or_nang,
                 'Code Switching': code_switching,
                 'Punctuation Marks': has_punctuation_marks}
@@ -86,8 +97,8 @@ class FeatureMatrix:
     def converting_to_feature_matrix(self):
         raw_words = self.read_xlsx.reading()
 
-        feature_words = []
-        index_words = []
+        feature_words = [] # Dataframe column
+        index_words = [] # Dataframe row
 
         for word in raw_words:
             features = self.extracting_features(word)
@@ -98,18 +109,32 @@ class FeatureMatrix:
 
         return df
 
-'''
+
 class NaivePrediction:
     def __init__(self):
-        self.oe = OrdinalEncoder()
-        self.model = CategoricalNB()
-        self.label = LabelEncoder()
-    
-    def fit_to_data(self, data_array):
+        self.rdata_label_encoder = LabelEncoder()
+        self.rdata_ordinal_encoder = OrdinalEncoder()
+        self.model_categoricalnb = CategoricalNB()
 
-    
-    def train_model(self):
-'''
+    def CategoricalToInteger(self, dataframe):
+        encoded_dataframe = self.rdata_ordinal_encoder.fit(dataframe)
+
+        return encoded_dataframe
+
+    def EncodedTargetLabels(self):
+        target_labels = ['ENG', 'FIL', 'CS', 'OTH']
+        return self.rdata_label_encoder.fit(target_labels)
+
+    def TrainModel(self, encoded_dataframe):
+        fitted_data = self.model_categoricalnb.fit(encoded_dataframe, self.EncodedTargetLabels(self))
+
+        return fitted_data
+
+    def PredictedValueOfToken(self, token: str):
+        pass
+
+
+
 
 #-- Driver for testing --
 data = input("Input file name: ").strip()
@@ -118,7 +143,9 @@ fm = FeatureMatrix(data)
 
 data_frame = fm.converting_to_feature_matrix()
 
-print(data_frame)
+nb = NaivePrediction()
+
+X_fit = nb.CategoricalToInteger(data_frame)
 
 #-- Don't mind the block of code below
 #rx = Readxlsx(data)
