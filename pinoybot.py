@@ -12,8 +12,16 @@ import os
 import pickle
 from typing import List
 
+from train_model import feature_matrix
+
+
 # Main tagging function
 def tag_language(tokens: List[str]) -> List[str]:
+    with open('bernoulli_nb.pkl', 'rb') as f:
+        model = pickle.load(f)
+
+    features = feature_matrix(tokens)
+    predicted = model.predict(features)
 
     """
     Tags each token in the input list with its predicted language.
@@ -42,11 +50,18 @@ def tag_language(tokens: List[str]) -> List[str]:
     # the tag_language function is retained and correctly accomplishes the expected task.
 
     # Currently, the bot just tags every token as FIL. Replace this with your more intelligent predictions.
-    return ['FIL' for i in tokens]
+
+    return [str(tag) for tag in predicted]
+
 
 if __name__ == "__main__":
     # Example usage
-    example_tokens = ["May", "tao", "dito"]
+    example_tokens = ["Kumain", "ako", "ng", "manok", "sa", "Maynila", "kahapon", "."]
+    print("Tokens:", example_tokens)
+    tags = tag_language(example_tokens)
+    print(tags)
+
+    example_tokens = ["chie", "satonaka", "is", "the", "best", "character", "in", "persona", "4", "golden"]
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)
     print(tags)
