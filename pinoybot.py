@@ -56,12 +56,19 @@ def tag_language(tokens: List[str]) -> List[str]:
 
 if __name__ == "__main__":
     # Example usage
-    example_tokens = ["Kumain", "ako", "ng", "manok", "sa", "Maynila", "kahapon", "."]
-    print("Tokens:", example_tokens)
-    tags = tag_language(example_tokens)
-    print(tags)
-
-    example_tokens = ["Fir1", "is", "a", "matlab", "command", "for", "digital", "filters", "."]
+    example_tokens = [
+        "I", "was", "walking", "to", "the", "market", "this", "morning", "because", "I", "needed",
+        "to", "buy", "some", "fresh", "vegetables", "and", "fruit", "for", "dinner", "pero", "pagdating",
+        "ko", "doon", "napansin", "ko", "na", "sobrang", "haba", "ng", "pila", "sa", "bawat", "stall",
+        "kaya", "nagdesisyon", "akong", "maghintay", "muna", "habang", "umiinom", "ng", "tubig", "at",
+        "nakikipagkwentuhan", "sa", "isang", "matandang", "tindera", "na", "napakabait", "at", "binigyan",
+        "pa", "ako", "ng", "ilang", "tips", "kung", "saan", "mas", "murang", "bumili", "ng", "karne",
+        "at", "gulay", "kaya", "sinunod", "ko", "ang", "kanyang", "payo", "at", "nakatipid", "ako", "ng",
+        "maraming", "pera", "before", "heading", "home", "to", "cook", "a", "simple", "meal", "for", "my",
+        "family", "dahil", "gusto", "kong", "ipaghanda", "sila", "ng", "masarap", "na", "hapunan", "kahit",
+        "pagod", "na", "ako", "mula", "sa", "maghapong", "paglalakad", "at", "pamimili", "because", "seeing",
+        "everyone", "happy", "during", "dinner", "always", "makes", "all", "the", "effort", "worth", "it", "."
+    ]
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)
     print(tags)
