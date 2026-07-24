@@ -61,7 +61,7 @@ if __name__ == "__main__":
     tags = tag_language(example_tokens)
     print(tags)
 
-    example_tokens = ["chie", "satonaka", "is", "the", "best", "character", "in", "persona", "4", "golden"]
+    example_tokens = ["Fir1", "is", "a", "matlab", "command", "for", "digital", "filters", "."]
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)
     print(tags)
