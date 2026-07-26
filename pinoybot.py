@@ -1,18 +1,82 @@
-"""
-pinoybot.py
-
-PinoyBot: Filipino Code-Switched Language Identifier
-
-This module provides the main tagging function for the PinoyBot project, which identifies the language of each word in a code-switched Filipino-English text. The function is designed to be called with a list of tokens and returns a list of tags ("ENG", "FIL", "CS", or "OTH").
-
-Model training and feature extraction should be implemented in a separate script. The trained model should be saved and loaded here for prediction.
-"""
-
-import os
 import pickle
 from typing import List
+import pandas as pd
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB
 
-from train_model import feature_matrix
+def feature_matrix(words):
+
+    x = pd.DataFrame({"word": words})
+    x["word"] = x["word"].str.lower()
+
+    x["has c,f,j,q,v,x,z"] = x["word"].str.contains(r"[cfjqvxz]").astype(int)
+
+    common_eng_words = (
+        "the", "a", "an", "to", "of", "in", "on", "for", "and", "or",
+        "but", "with", "my", "your", "his", "her", "it", "this",
+        "that", "is", "was", "are", "were", "be", "i", "you", "we", "they"
+    )
+
+    x["common english word"] = x["word"].isin(common_eng_words).astype(int)
+
+    x["fil prefixes"] = (
+        x["word"].str.startswith((
+            "pinagka", "pinaka", "pakikipag", "tagapag", "pagkaka", "pakiki", "pagka", "pinag",
+            "napaka", "mapag", "pagpa", "ipag", "maka", "maki", "naka", "paki", "pang", "taga",
+            "mag", "nag", "pag", "ipa", "ika", "ina", "ka", "pa", "na", "ma", "um", "i"
+        ))
+    ).astype(int)
+
+    x["fil infixes"] = (
+        x["word"].str[1:-1].str.contains(r"(?:um|in)")
+    ).astype(int)
+
+    x["fil suffixes"] = (
+        x["word"].str.endswith(("an", "in", "han", "hin"))
+    ).astype(int)
+
+    x["eng prefix"] = (
+        x["word"].str.startswith((
+            "inter", "under", "super", "trans", "anti", "over", "post", "auto",
+            "non", "pre", "sub", "dis", "mis", "un", "re", "de", "co", "ex", "im",
+            "in", "il", "ir"
+        ))
+    ).astype(int)
+
+    x["eng suffix"] = (
+        x["word"].str.endswith((
+            "tion", "sion", "ment", "ness", "able", "ible", "ship", "hood", "ward",
+            "wise", "less", "full", "ally", "ingly", "ing", "ity", "ive", "ous",
+            "est", "ism", "ist", "ize", "ise", "ate", "ence", "ance", "ful", "ous",
+            "ial", "ic", "al", "er", "or", "ly", "ed", "es", "s"
+        ))
+    ).astype(int)
+
+    x["hyphen?"] = (x["word"].str.contains(r"[-]")).astype(int)
+
+    x["fil prefix with hyphen"] = (
+            (x["fil prefixes"] == 1) &
+            x["word"].str.contains(r"-")).astype(int)
+
+    x["nonletter word"] = (~x["word"].str.contains(r"^[a-z]+$")).astype(int)
+
+    return x.iloc[:, 1:11]
+
+
+df = pd.read_excel("dataset/raw_tokens_annotated_v2.xlsx")
+x = feature_matrix(df.iloc[:, 3])
+y = df.iloc[:, 4]
+x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+nb = BernoulliNB()
+nb.fit(x_train, y_train)
+nb_preds = nb.predict(x_test)
+print("Naive Bayes accuracy:", accuracy_score(y_test, nb_preds))
+print(classification_report(y_test, nb_preds))
+
+with open("bernoulli_nb.pkl", "wb") as f:
+    pickle.dump(nb, f)
 
 
 # Main tagging function
@@ -57,17 +121,7 @@ def tag_language(tokens: List[str]) -> List[str]:
 if __name__ == "__main__":
     # Example usage
     example_tokens = [
-        "I", "was", "walking", "to", "the", "market", "this", "morning", "because", "I", "needed",
-        "to", "buy", "some", "fresh", "vegetables", "and", "fruit", "for", "dinner", "pero", "pagdating",
-        "ko", "doon", "napansin", "ko", "na", "sobrang", "haba", "ng", "pila", "sa", "bawat", "stall",
-        "kaya", "nagdesisyon", "akong", "maghintay", "muna", "habang", "umiinom", "ng", "tubig", "at",
-        "nakikipagkwentuhan", "sa", "isang", "matandang", "tindera", "na", "napakabait", "at", "binigyan",
-        "pa", "ako", "ng", "ilang", "tips", "kung", "saan", "mas", "murang", "bumili", "ng", "karne",
-        "at", "gulay", "kaya", "sinunod", "ko", "ang", "kanyang", "payo", "at", "nakatipid", "ako", "ng",
-        "maraming", "pera", "before", "heading", "home", "to", "cook", "a", "simple", "meal", "for", "my",
-        "family", "dahil", "gusto", "kong", "ipaghanda", "sila", "ng", "masarap", "na", "hapunan", "kahit",
-        "pagod", "na", "ako", "mula", "sa", "maghapong", "paglalakad", "at", "pamimili", "because", "seeing",
-        "everyone", "happy", "during", "dinner", "always", "makes", "all", "the", "effort", "worth", "it", "."
+        "Dapat", "nagshift", "na", "lang", "ako", "sa", "mech", "eng", "instead", "of", "cs", ".", "i", "want", "partial", "differential", "equations","."
     ]
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)

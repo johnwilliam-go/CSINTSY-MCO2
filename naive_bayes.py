@@ -137,7 +137,7 @@ class NaivePrediction:
 
 
 #-- Driver for testing --
-data = input("Input file name: ").strip()
+data = "raw_tokens 20-39.xlsx"
 
 fm = FeatureMatrix(data)
 
