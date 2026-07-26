@@ -4,11 +4,14 @@ import pandas as pd
 from sklearn.metrics import accuracy_score, classification_report
 from sklearn.model_selection import train_test_split
 from sklearn.naive_bayes import BernoulliNB
+from scipy.sparse import csr_matrix, hstack
+from sklearn.feature_extraction.text import CountVectorizer
 
 def feature_matrix(words):
 
     x = pd.DataFrame({"word": words})
     x["word"] = x["word"].str.lower()
+    x["word"] = x["word"].astype(str)
 
     x["has c,f,j,q,v,x,z"] = x["word"].str.contains(r"[cfjqvxz]").astype(int)
 
@@ -61,31 +64,101 @@ def feature_matrix(words):
 
     x["nonletter word"] = (~x["word"].str.contains(r"^[a-z]+$")).astype(int)
 
-    return x.iloc[:, 1:11]
+    x["punctuation only"] = (
+        x["word"].str.fullmatch(r"[^\w\s]+")
+    ).fillna(False).astype(int)
+
+# insert your feature matrix
+
+    return x.iloc[:,1:]
 
 
-df = pd.read_excel("dataset/raw_tokens_annotated_v2.xlsx")
-x = feature_matrix(df.iloc[:, 3])
+df = pd.read_excel("raw_tokens 20-39 (2).xlsx")
+
+words = df.iloc[:, 3].astype(str)
 y = df.iloc[:, 4]
-x_train, x_test, y_train, y_test = train_test_split(x, y, test_size=0.2, random_state=42)
+
+# 70% train, 15% validation, 15% test
+words_train, words_temp, y_train, y_temp = train_test_split(
+    words,
+    y,
+    test_size=0.30,
+    stratify=y,
+    random_state=42
+)
+
+words_val, words_test, y_val, y_test = train_test_split(
+    words_temp,
+    y_temp,
+    test_size=0.50,
+    stratify=y_temp,
+    random_state=42
+)
+
+X_train_handcrafted = csr_matrix(feature_matrix(words_train).to_numpy())
+X_val_handcrafted = csr_matrix(feature_matrix(words_val).to_numpy())
+X_test_handcrafted = csr_matrix(feature_matrix(words_test).to_numpy())
+
+vectorizer = CountVectorizer(
+    analyzer="char",
+    ngram_range=(1,3),
+    binary=True,
+    lowercase=True
+)
+
+X_train_ngram = vectorizer.fit_transform(words_train)
+X_val_ngram = vectorizer.transform(words_val)
+X_test_ngram = vectorizer.transform(words_test)
+
+X_train = hstack([X_train_handcrafted, X_train_ngram]).tocsr()
+X_val = hstack([X_val_handcrafted, X_val_ngram]).tocsr()
+X_test = hstack([X_test_handcrafted, X_test_ngram]).tocsr()
+
 
 nb = BernoulliNB()
-nb.fit(x_train, y_train)
-nb_preds = nb.predict(x_test)
-print("Naive Bayes accuracy:", accuracy_score(y_test, nb_preds))
-print(classification_report(y_test, nb_preds))
+nb.fit(X_train, y_train)
+
+# Validation
+val_preds = nb.predict(X_val)
+print("Validation Accuracy:", accuracy_score(y_val, val_preds))
+print(classification_report(y_val, val_preds))
+
+# Test
+test_preds = nb.predict(X_test)
+print("Test Accuracy:", accuracy_score(y_test, test_preds))
+print(classification_report(y_test, test_preds))
+
+# Save model and vectorizer
+model_data = {
+    "model": nb,
+    "vectorizer": vectorizer
+}
 
 with open("bernoulli_nb.pkl", "wb") as f:
-    pickle.dump(nb, f)
-
+    pickle.dump(model_data, f)
 
 # Main tagging function
 def tag_language(tokens: List[str]) -> List[str]:
     with open('bernoulli_nb.pkl', 'rb') as f:
-        model = pickle.load(f)
+        model_data = pickle.load(f)
 
-    features = feature_matrix(tokens)
+    model = model_data["model"]
+    vectorizer = model_data["vectorizer"]
+
+    handcrafted_features = csr_matrix(
+        feature_matrix(tokens).to_numpy()
+    )
+
+    ngram_features = vectorizer.transform(tokens)
+
+    features = hstack([
+        handcrafted_features,
+        ngram_features
+    ]).tocsr()
+
     predicted = model.predict(features)
+
+
 
     """
     Tags each token in the input list with its predicted language.
@@ -115,7 +188,7 @@ def tag_language(tokens: List[str]) -> List[str]:
 
     # Currently, the bot just tags every token as FIL. Replace this with your more intelligent predictions.
 
-    return [str(tag) for tag in predicted]
+    return predicted.tolist()
 
 
 if __name__ == "__main__":
