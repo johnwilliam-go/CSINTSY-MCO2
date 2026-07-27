@@ -67,32 +67,19 @@ def feature_matrix(words):
     x["punctuation only"] = (
         x["word"].str.fullmatch(r"[^\w\s]+")
     ).fillna(False).astype(int)
-
 # insert your feature matrix
-
     return x.iloc[:,1:]
 
-
 df = pd.read_excel("raw_tokens 20-39 (2).xlsx", keep_default_na=False)
-
 words = df.iloc[:, 3].astype(str)
 y = df.iloc[:, 4]
-
 # 70% train, 15% validation, 15% test
 words_train, words_temp, y_train, y_temp = train_test_split(
-    words,
-    y,
-    test_size=0.30,
-    stratify=y,
-    random_state=42
+    words,y,test_size=0.30,stratify=y,random_state=42
 )
 
 words_val, words_test, y_val, y_test = train_test_split(
-    words_temp,
-    y_temp,
-    test_size=0.50,
-    stratify=y_temp,
-    random_state=42
+    words_temp,y_temp,test_size=0.50,stratify=y_temp, random_state=42
 )
 
 X_train_handcrafted = csr_matrix(feature_matrix(words_train).to_numpy())
@@ -114,21 +101,17 @@ X_train = hstack([X_train_handcrafted, X_train_ngram]).tocsr()
 X_val = hstack([X_val_handcrafted, X_val_ngram]).tocsr()
 X_test = hstack([X_test_handcrafted, X_test_ngram]).tocsr()
 
-
 nb = BernoulliNB()
 nb.fit(X_train, y_train)
-
-# Validation
+# Valida
 val_preds = nb.predict(X_val)
 print("Validation Accuracy:", accuracy_score(y_val, val_preds))
 print(classification_report(y_val, val_preds))
-
 # Test
 test_preds = nb.predict(X_test)
 print("Test Accuracy:", accuracy_score(y_test, test_preds))
 print(classification_report(y_test, test_preds))
 
-# Save model and vectorizer
 model_data = {
     "model": nb,
     "vectorizer": vectorizer
@@ -141,21 +124,16 @@ with open("bernoulli_nb.pkl", "wb") as f:
 def tag_language(tokens: List[str]) -> List[str]:
     with open('bernoulli_nb.pkl', 'rb') as f:
         model_data = pickle.load(f)
-
     model = model_data["model"]
     vectorizer = model_data["vectorizer"]
-
     handcrafted_features = csr_matrix(
         feature_matrix(tokens).to_numpy()
     )
-
     ngram_features = vectorizer.transform(tokens)
-
     features = hstack([
         handcrafted_features,
         ngram_features
     ]).tocsr()
-
     predicted = model.predict(features)
 
 
