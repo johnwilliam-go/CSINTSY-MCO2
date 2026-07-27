@@ -1,9 +1,11 @@
 import pickle
-from pathlib import Path
-from typing import List
-
 import pandas as pd
 from scipy.sparse import csr_matrix, hstack
+from sklearn.feature_extraction.text import CountVectorizer
+from sklearn.metrics import accuracy_score, classification_report
+from sklearn.model_selection import train_test_split
+from sklearn.naive_bayes import BernoulliNB
+
 def feature_matrix(words):
 
     x = pd.DataFrame({"word": words})
@@ -66,64 +68,56 @@ def feature_matrix(words):
     ).fillna(False).astype(int)
 # insert your feature matrix
     return x.iloc[:,1:]
-
-# Main tagging function
-def tag_language(tokens: List[str]) -> List[str]:
-
-    if not tokens:
-        return []
-    model_path = Path(__file__).with_name("bernoulli_nb.pkl")
-    with model_path.open("rb") as f:
-        model_data = pickle.load(f)
-    model = model_data["model"]
-    vectorizer = model_data["vectorizer"]
-    handcrafted_features = csr_matrix(
-        feature_matrix(tokens).to_numpy()
+def train_model():
+    df = pd.read_excel("raw_tokens 20-39 (2).xlsx", keep_default_na=False)
+    words = df.iloc[:, 3].astype(str)
+    y = df.iloc[:, 4]
+    # 70% train, 15% validation, 15% test
+    words_train, words_temp, y_train, y_temp = train_test_split(
+        words, y, test_size=0.30, stratify=y, random_state=42
     )
-    ngram_features = vectorizer.transform(tokens)
-    combined_features = hstack([
-        handcrafted_features,
-        ngram_features
-    ]).tocsr()
-    predictions = model.predict(combined_features)
 
+    words_val, words_test, y_val, y_test = train_test_split(
+        words_temp, y_temp, test_size=0.50, stratify=y_temp, random_state=42
+    )
 
-    """
-    Tags each token in the input list with its predicted language.
-    Args:
-        tokens: List of word tokens (strings).
-    Returns:
-        tags: List of predicted tags ("ENG", "FIL", "CS", or "OTH"), one per token.
-    """
-    # 1. Load your trained model from disk (e.g., using pickle or joblib)
-    #    Example: with open('trained_model.pkl', 'rb') as f: model = pickle.load(f)
-    #    (Replace with your actual model loading code)
+    X_train_handcrafted = csr_matrix(feature_matrix(words_train).to_numpy())
+    X_val_handcrafted = csr_matrix(feature_matrix(words_val).to_numpy())
+    X_test_handcrafted = csr_matrix(feature_matrix(words_test).to_numpy())
 
-    # 2. Extract features from the input tokens to create the feature matrix
-    #    Example: features = ... (your feature extraction logic here)
+    vectorizer = CountVectorizer(
+        analyzer="char",
+        ngram_range=(1, 3),
+        binary=True,
+        lowercase=True
+    )
 
-    # 3. Use the model to predict the tags for each token
-    #    Example: predicted = model.predict(features)
+    X_train_ngram = vectorizer.fit_transform(words_train)
+    X_val_ngram = vectorizer.transform(words_val)
+    X_test_ngram = vectorizer.transform(words_test)
 
-    # 4. Convert the predictions to a list of strings ("ENG", "FIL", or "OTH")
-    #    Example: tags = [str(tag) for tag in predicted]
+    X_train = hstack([X_train_handcrafted, X_train_ngram]).tocsr()
+    X_val = hstack([X_val_handcrafted, X_val_ngram]).tocsr()
+    X_test = hstack([X_test_handcrafted, X_test_ngram]).tocsr()
 
-    # 5. Return the list of tags
-    #    return tags
+    nb = BernoulliNB()
+    nb.fit(X_train, y_train)
+    #validation
+    val_preds = nb.predict(X_val)
+    print("Validation Accuracy:", accuracy_score(y_val, val_preds))
+    print(classification_report(y_val, val_preds))
+    #Test
+    test_preds = nb.predict(X_test)
+    print("Test Accuracy:", accuracy_score(y_test, test_preds))
+    print(classification_report(y_test, test_preds))
 
-    # You can define other functions, import new libraries, or add other Python files as needed, as long as
-    # the tag_language function is retained and correctly accomplishes the expected task.
+    model_data = {
+        "model": nb,
+        "vectorizer": vectorizer
+    }
 
-    # Currently, the bot just tags every token as FIL. Replace this with your more intelligent predictions.
-
-    return predictions.tolist()
-
+    with open("bernoulli_nb.pkl", "wb") as f:
+        pickle.dump(model_data, f)
 
 if __name__ == "__main__":
-    # Example usage
-    example_tokens = [
-        "I", "want", "na", "lang", "ako", "sa", "mech", "eng", "instead", "of", "cs", ".", "i", "want", "partial", "differential", "equations","."
-    ]
-    print("Tokens:", example_tokens)
-    tags = tag_language(example_tokens)
-    print(tags)
+    train_model()
