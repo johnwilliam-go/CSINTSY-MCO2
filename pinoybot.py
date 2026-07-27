@@ -73,7 +73,7 @@ def feature_matrix(words):
     return x.iloc[:,1:]
 
 
-df = pd.read_excel("raw_tokens 20-39 (2).xlsx")
+df = pd.read_excel("raw_tokens 20-39 (2).xlsx", keep_default_na=False)
 
 words = df.iloc[:, 3].astype(str)
 y = df.iloc[:, 4]
