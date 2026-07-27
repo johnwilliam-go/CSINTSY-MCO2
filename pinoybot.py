@@ -116,11 +116,9 @@ def tag_language(tokens: List[str]) -> List[str]:
 
 
 if __name__ == "__main__":
-    # Example usage
     example_tokens = [
-        # Numbers
-        "₱500"
-    ]
+        "Dapat", "nagshift", "na", "lang", "ako", "sa", "mech", "eng", "instead", "of", "cs", ".", "i", "want",
+        "partial", "differential", "equations", "."]
 
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)
