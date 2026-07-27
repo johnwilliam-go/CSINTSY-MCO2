@@ -55,10 +55,6 @@ def feature_matrix(words):
 
     x["hyphen?"] = (x["word"].str.contains(r"[-]")).astype(int)
 
-    x["fil prefix with hyphen"] = (
-            (x["fil prefixes"] == 1) &
-            x["word"].str.contains(r"-")).astype(int)
-
     x["nonletter word"] = (~x["word"].str.contains(r"^[a-z]+$")).astype(int)
 
     x["punctuation only"] = (
@@ -122,8 +118,10 @@ def tag_language(tokens: List[str]) -> List[str]:
 if __name__ == "__main__":
     # Example usage
     example_tokens = [
-        "I", "want", "na", "lang", "ako", "sa", "mech", "eng", "instead", "of", "cs", ".", "i", "want", "partial", "differential", "equations","."
+        # Numbers
+        "₱500"
     ]
+
     print("Tokens:", example_tokens)
     tags = tag_language(example_tokens)
     print(tags)

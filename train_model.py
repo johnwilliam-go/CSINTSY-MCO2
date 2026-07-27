@@ -57,10 +57,6 @@ def feature_matrix(words):
 
     x["hyphen?"] = (x["word"].str.contains(r"[-]")).astype(int)
 
-    x["fil prefix with hyphen"] = (
-            (x["fil prefixes"] == 1) &
-            x["word"].str.contains(r"-")).astype(int)
-
     x["nonletter word"] = (~x["word"].str.contains(r"^[a-z]+$")).astype(int)
 
     x["punctuation only"] = (
@@ -69,9 +65,10 @@ def feature_matrix(words):
 # insert your feature matrix
     return x.iloc[:,1:]
 def train_model():
-    df = pd.read_excel("raw_tokens 20-39 (2).xlsx", keep_default_na=False)
+    df = pd.read_excel("raw_tokens 20-39(3).xlsx", keep_default_na=False)
     words = df.iloc[:, 3].astype(str)
     y = df.iloc[:, 4]
+
     # 70% train, 15% validation, 15% test
     words_train, words_temp, y_train, y_temp = train_test_split(
         words, y, test_size=0.30, stratify=y, random_state=42
