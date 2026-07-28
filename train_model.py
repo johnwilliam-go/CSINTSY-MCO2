@@ -62,7 +62,8 @@ def feature_matrix(words):
     x["punctuation only"] = (
         x["word"].str.fullmatch(r"[^\w\s]+")
     ).fillna(False).astype(int)
-# insert your feature matrix
+
+
     return x.iloc[:,1:]
 def train_model():
     df = pd.read_excel("raw_tokens 20-39(3).xlsx", keep_default_na=False)
@@ -99,11 +100,11 @@ def train_model():
 
     nb = BernoulliNB()
     nb.fit(X_train, y_train)
-    #validation
+
     val_preds = nb.predict(X_val)
     print("Validation Accuracy:", accuracy_score(y_val, val_preds))
     print(classification_report(y_val, val_preds))
-    #Test
+
     test_preds = nb.predict(X_test)
     print("Test Accuracy:", accuracy_score(y_test, test_preds))
     print(classification_report(y_test, test_preds))

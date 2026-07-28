@@ -60,10 +60,10 @@ def feature_matrix(words):
     x["punctuation only"] = (
         x["word"].str.fullmatch(r"[^\w\s]+")
     ).fillna(False).astype(int)
-# insert your feature matrix
+
     return x.iloc[:,1:]
 
-# Main tagging function
+
 def tag_language(tokens: List[str]) -> List[str]:
 
     if not tokens:
